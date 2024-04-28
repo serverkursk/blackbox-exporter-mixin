@@ -25,6 +25,8 @@ local tsFieldConfig = timeSeriesPanel.fieldConfig;
 local tsCustom = tsFieldConfig.defaults.custom;
 local tsLegend = tsOptions.legend;
 
+local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.substr(str, 1, std.length(str));
+
 {
   grafanaDashboards+:: {
 
@@ -35,7 +37,20 @@ local tsLegend = tsOptions.legend;
       ) +
       datasource.generalOptions.withLabel('Data source'),
 
-    local jobVariable =
+    local summaryJobVariable =
+      query.new(
+        'job',
+        'label_values(probe_success{}, job)'
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort(1) +
+      query.generalOptions.withLabel('Job') +
+      query.selectionOptions.withMulti(true) +
+      query.selectionOptions.withIncludeAll(true) +
+      query.refresh.onLoad() +
+      query.refresh.onTime(),
+
+    local detailsJobVariable =
       query.new(
         'job',
         'label_values(probe_success{}, job)'
@@ -50,20 +65,24 @@ local tsLegend = tsOptions.legend;
 
     local instanceVariable =
       query.new(
-        'instance',
-        'label_values(probe_success{job=~"$job"}, instance)'
+        $._config.humanReadableLabel,
+        'label_values(probe_success{job=~"$job"}, %s)' % $._config.humanReadableLabel,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
-      query.generalOptions.withLabel('Instance') +
-      query.selectionOptions.withMulti(false) +
-      query.selectionOptions.withIncludeAll(false) +
+      query.generalOptions.withLabel(capitalize($._config.humanReadableLabel)) +
+      query.selectionOptions.withMulti(true) +
+      query.selectionOptions.withIncludeAll(true) +
       query.refresh.onLoad() +
       query.refresh.onTime(),
 
-    local variables = [
+    local summaryVariables = [
       datasourceVariable,
-      jobVariable,
+      summaryJobVariable,
+    ],
+    local detailsVariables = [
+      datasourceVariable,
+      detailsJobVariable,
       instanceVariable,
     ],
 
@@ -71,7 +90,7 @@ local tsLegend = tsOptions.legend;
       probe_success{
         job=~"$job"
       }
-    ||| % $._config,
+    |||,
 
     local statusMapStatPanel =
       statPanel.new(
@@ -83,7 +102,7 @@ local tsLegend = tsOptions.legend;
           statusMapQuery,
         ) +
         prometheus.withLegendFormat(
-          '{{instance}}'
+          '{{%s}}' % $._config.humanReadableLabel
         ),
       ) +
       stOptions.withTextMode('value_and_name') +
@@ -106,9 +125,8 @@ local tsLegend = tsOptions.legend;
         stPanelOptions.link.withTitle('Go To Probe') +
         stPanelOptions.link.withType('link') +
         stPanelOptions.link.withUrl(
-          'd/' + $._config.dashboardUid + '/blackbox-exporter?var-instance=${__field.labels.instance}&var-job=${__field.labels.job}',
-        ) +
-        stPanelOptions.link.withTargetBlank(true),
+          'd/' + $._config.detailsDashboardUid + '/blackbox-exporter-%(humanReadableLabel)s-details?var-%(humanReadableLabel)s=${__field.labels.%(humanReadableLabel)s}&var-job=${__field.labels.job}' % $._config,
+        ),
       ]),
 
     local probesQuery = |||
@@ -117,7 +135,7 @@ local tsLegend = tsOptions.legend;
           job=~"$job"
         }
       )
-    ||| % $._config,
+    |||,
 
     local probesStatPanel =
       statPanel.new(
@@ -152,7 +170,7 @@ local tsLegend = tsOptions.legend;
           job=~"$job"
         }
       )
-    ||| % $._config,
+    |||,
 
     local probesSuccessStatPanel =
       statPanel.new(
@@ -231,9 +249,9 @@ local tsLegend = tsOptions.legend;
     local uptimeQuery = |||
       probe_success{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local uptimeStatPanel =
       statPanel.new(
@@ -260,9 +278,9 @@ local tsLegend = tsOptions.legend;
     local probeSuccessQuery = |||
       probe_success{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local probeSuccessStatPanel =
       statPanel.new(
@@ -291,9 +309,9 @@ local tsLegend = tsOptions.legend;
     local latestResponseCodeQuery = |||
       probe_http_status_code{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local latestResponseCodeStatPanel =
       statPanel.new(
@@ -322,9 +340,9 @@ local tsLegend = tsOptions.legend;
     local sslQuery = |||
       probe_http_ssl{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local sslStatPanel =
       statPanel.new(
@@ -353,9 +371,9 @@ local tsLegend = tsOptions.legend;
     local sslVersionQuery = |||
       probe_tls_version_info{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local sslVersionStatPanel =
       statPanel.new(
@@ -382,9 +400,9 @@ local tsLegend = tsOptions.legend;
     local redirectsQuery = |||
       probe_http_redirects{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local redirectsStatPanel =
       statPanel.new(
@@ -413,9 +431,9 @@ local tsLegend = tsOptions.legend;
     local httpVersionQuery = |||
       probe_http_version{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local httpVersionStatPanel =
       statPanel.new(
@@ -436,9 +454,9 @@ local tsLegend = tsOptions.legend;
     local sslCertificateExpiryQuery = |||
       probe_ssl_earliest_cert_expiry{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       } - time()
-    |||,
+    ||| % $._config,
 
     local sslCertificateExpiryStatPanel =
       statPanel.new(
@@ -463,9 +481,9 @@ local tsLegend = tsOptions.legend;
     local averageLatencyQuery = |||
       probe_duration_seconds{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local averageLatencyStatPanel =
       statPanel.new(
@@ -483,13 +501,13 @@ local tsLegend = tsOptions.legend;
     local averageDnsLookupQuery = |||
       probe_dns_lookup_time_seconds{
         job=~"$job",
-        instance=~"$instance"
+        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
       }
-    |||,
+    ||| % $._config,
 
     local averageDnsLookupStatPanel =
       statPanel.new(
-        'Average Latency',
+        'Average DNS Lookup Latency',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
@@ -504,10 +522,10 @@ local tsLegend = tsOptions.legend;
       sum(
         probe_http_duration_seconds{
           job=~"$job",
-          instance=~"$instance"
+          %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
         }
-      ) by (instance)
-    |||,
+      ) by (%(humanReadableLabel)s)
+    ||| % $._config,
     local probeTotalDurationQuery = std.strReplace(probeHttpDurationQuery, 'probe_http_duration_seconds', 'probe_duration_seconds'),
 
     local probeDurationTimeSeriesPanel =
@@ -549,10 +567,10 @@ local tsLegend = tsOptions.legend;
       sum(
         probe_http_duration_seconds{
           job=~"$job",
-          instance=~"$instance"
+          %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
         }
       ) by (phase)
-    |||,
+    ||| % $._config,
     local probeIcmpPhaseDurationQuery = std.strReplace(probeHttpPhaseDurationQuery, 'probe_http_duration_seconds', 'probe_icmp_duration_seconds'),
 
     local probePhaseTimeSeriesPanel =
@@ -597,23 +615,23 @@ local tsLegend = tsOptions.legend;
 
     local individualProbesRow =
       row.new(
-        title='$instance',
+        title='$target',
       ) +
-      row.withRepeat('instance'),
+      row.withRepeat('target'),
 
-    'blackbox-exporter.json':
+    'blackbox-exporter-summary.json':
       $._config.bypassDashboardValidation +
       dashboard.new(
-        'Blackbox Exporter',
+        'Blackbox Exporter / Summary',
       ) +
       dashboard.withDescription('A dashboard that monitors the Blackbox-exporter. It is created using the blackbox-exporter-mixin for the the (blackbox-exporter)[https://github.com/prometheus/blackbox-exporter].') +
-      dashboard.withUid($._config.dashboardUid) +
+      dashboard.withUid('blackbox-exporter-summary-kc8nbr') +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
       dashboard.withEditable(true) +
       dashboard.time.withFrom('now-2d') +
       dashboard.time.withTo('now') +
-      dashboard.withVariables(variables) +
+      dashboard.withVariables(summaryVariables) +
       dashboard.withPanels(
         [
           summaryRow +
@@ -632,7 +650,27 @@ local tsLegend = tsOptions.legend;
           panelWidth=6,
           panelHeight=4,
           startY=6
-        ) +
+        )
+      ),
+
+    'blackbox-exporter-details.json':
+      $._config.bypassDashboardValidation +
+      dashboard.new(
+        'Blackbox Exporter / ' + capitalize($._config.humanReadableLabel) + ' Details',
+      ) +
+      dashboard.withDescription('A dashboard that monitors the Blackbox-exporter. It is created using the blackbox-exporter-mixin for the the (blackbox-exporter)[https://github.com/prometheus/blackbox-exporter].') +
+      dashboard.withUid('blackbox-exporter-details-mz7l7e') +
+      dashboard.withTags($._config.tags) +
+      dashboard.withTimezone('utc') +
+      dashboard.withEditable(true) +
+      dashboard.time.withFrom('now-2d') +
+      dashboard.time.withTo('now') +
+      dashboard.withVariables(detailsVariables) +
+      dashboard.withLinks([
+        dashboard.link.link.new('Summary all', 'd/' + $._config.summaryDashboardUid + '/blackbox-exporter-summary'),
+        dashboard.link.link.new('Summary this Job', 'd/' + $._config.summaryDashboardUid + '/blackbox-exporter-summary?var-job=$job'),
+      ]) +
+      dashboard.withPanels(
         [
           individualProbesRow +
           row.gridPos.withX(0) +

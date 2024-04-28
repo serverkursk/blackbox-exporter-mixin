@@ -10,7 +10,8 @@
     blackboxExporterSelector: 'job="blackbox-exporter"',
 
     grafanaUrl: 'https://grafana.com',
-    dashboardUid: 'blackbox-exporter-j4da',
+    summaryDashboardUid: 'blackbox-exporter-summary-kc8nbr',
+    detailsDashboardUid: 'blackbox-exporter-details-mz7l7e',
     tags: ['blackbox-exporter', 'blackbox-exporter-mixin'],
 
     // The period in days to consider for the uptime evaluation
@@ -22,5 +23,7 @@
 
     //Cert-manager defaults to 3 week renewal time
     probeSslExpireDaysThreshold: '21',
+
+    humanReadableLabel: 'instance',
   },
 }
