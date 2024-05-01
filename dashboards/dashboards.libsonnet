@@ -249,13 +249,13 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
       stOptions.reduceOptions.withCalcs(['lastNotNull']),
 
     local uptimeQuery = |||
-      sum by (%s) (
+      sum by (%(humanReadableLabel)s) (
         probe_success{
           job=~"$job",
-          %s=~"$%s"
+          %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
         }
       )
-    ||| % $._config.humanReadableLabel,
+    ||| % $._config,
 
     local uptimeStatPanel =
       statPanel.new(
