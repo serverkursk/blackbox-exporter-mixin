@@ -87,10 +87,12 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
     ],
 
     local statusMapQuery = |||
-      probe_success{
-        job=~"$job"
-      }
-    |||,
+      sum by (%s) (
+        probe_success{
+          job=~"$job"
+        }
+      )
+    ||| % $._config.humanReadableLabel,
 
     local statusMapStatPanel =
       statPanel.new(
@@ -247,11 +249,13 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
       stOptions.reduceOptions.withCalcs(['lastNotNull']),
 
     local uptimeQuery = |||
-      probe_success{
-        job=~"$job",
-        %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
-      }
-    ||| % $._config,
+      sum by (%s) (
+        probe_success{
+          job=~"$job",
+          %s=~"$%s"
+        }
+      )
+    ||| % $._config.humanReadableLabel,
 
     local uptimeStatPanel =
       statPanel.new(
