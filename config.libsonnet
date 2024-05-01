@@ -6,9 +6,6 @@
       __requires: [],
     },
 
-    // Selectors are inserted between {} in Prometheus queries.
-    blackboxExporterSelector: 'job="blackbox-exporter"',
-
     grafanaUrl: 'https://grafana.com',
     summaryDashboardUid: 'blackbox-exporter-summary-kc8nbr',
     detailsDashboardUid: 'blackbox-exporter-details-mz7l7e',
