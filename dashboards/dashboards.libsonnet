@@ -87,7 +87,7 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
     ],
 
     local statusMapQuery = |||
-      sum by (%s) (
+      sum by (job, %s) (
         probe_success{
           job=~"$job"
         }
@@ -249,7 +249,7 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
       stOptions.reduceOptions.withCalcs(['lastNotNull']),
 
     local uptimeQuery = |||
-      sum by (%(humanReadableLabel)s) (
+      sum by (job, %(humanReadableLabel)s) (
         probe_success{
           job=~"$job",
           %(humanReadableLabel)s=~"$%(humanReadableLabel)s"
