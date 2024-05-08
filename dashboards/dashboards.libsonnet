@@ -631,7 +631,7 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
       dashboard.withDescription('A dashboard that monitors the Blackbox-exporter. It is created using the blackbox-exporter-mixin for the the (blackbox-exporter)[https://github.com/prometheus/blackbox-exporter].') +
       dashboard.withUid('blackbox-exporter-summary-kc8nbr') +
       dashboard.withTags($._config.tags) +
-      dashboard.withTimezone('utc') +
+      dashboard.withTimezone($._config.timezone) +
       dashboard.withEditable(true) +
       dashboard.time.withFrom('now-2d') +
       dashboard.time.withTo('now') +
@@ -665,7 +665,7 @@ local capitalize = function(str) std.asciiUpper(std.substr(str, 0, 1)) + std.sub
       dashboard.withDescription('A dashboard that monitors the Blackbox-exporter. It is created using the blackbox-exporter-mixin for the the (blackbox-exporter)[https://github.com/prometheus/blackbox-exporter].') +
       dashboard.withUid('blackbox-exporter-details-mz7l7e') +
       dashboard.withTags($._config.tags) +
-      dashboard.withTimezone('utc') +
+      dashboard.withTimezone($._config.timezone) +
       dashboard.withEditable(true) +
       dashboard.time.withFrom('now-2d') +
       dashboard.time.withTo('now') +
